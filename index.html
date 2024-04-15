@@ -38,17 +38,29 @@
         </svg>
 
         <div>
-            <div class="draggable-item" data-node-title="Node 1" draggable="true">Node1 </div>
-            <div class="draggable-item" data-node-title="Node 2" draggable="true">Node2</div>
+            <div class="draggable-item" data-node-title="Node1" draggable="true">Node1 </div>
+            <div class="draggable-item" data-node-title="Node2" draggable="true">Node2</div>
 
-            <button onclick="connectNodes()">Connect Nodes</button>
+            <button id="connectNodesBtn">Connect Nodes</button>
         </div>
 
     </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
 
         const svg = document.getElementById('flowchart');
         let nodes = [];
+        let edges = [];
+        
+        $('#connectNodesBtn').unbind().on('click', function () {
+            const [sourceNode, targetNode] = nodes;
+            if (nodes.length !== 2) {
+                alert('Please select exactly two nodes to connect.');
+                return;
+            }
+            edges = connectNodes(sourceNode, targetNode, edges);
+        })
+
         document.addEventListener('DOMContentLoaded', function () {
             const toolboxItems = document.querySelectorAll('.draggable-item');
             toolboxItems.forEach(item => {
@@ -74,12 +86,6 @@
             event.target.classList.add('is-dragging');
         }
 
-        function generateKey() {
-            const arr = new Uint8Array((8 / 2));
-            window.crypto.getRandomValues(arr);
-            return `${Array.from(arr, dec => dec.toString(16).padStart(2, '0')).join('')}`;
-        }
-
         // Function to handle drag end event
         function dragEnd(event) {
             draggedItem.classList.remove('is-dragging');
@@ -97,12 +103,17 @@
         }
 
     });
-
+    function generateKey() {
+            const arr = new Uint8Array((8 / 2));
+            window.crypto.getRandomValues(arr);
+            return `${Array.from(arr, dec => dec.toString(16).padStart(2, '0')).join('')}`;
+        }
 
         function createNode(text) {
             const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
             group.setAttribute('transform', `translate(${Math.random() * 400}, ${Math.random() * 300})`);
             group.setAttribute('class', 'node'); // Add class 'node'
+            group.setAttribute('data-node-id', `${text}-${generateKey()}`);
 
             const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
             rect.setAttribute('class', 'node');
@@ -120,9 +131,7 @@
             group.appendChild(rect);
             group.appendChild(textNode);
             group.addEventListener('click', function (event) {
-                console.log("clicked")
                 if (!nodes.includes(group)) {
-                    console.log("clicked inside")
                     group.style.stroke = 'blue'; // Apply stroke color using style property
                     nodes.push(group);
                 } else {
@@ -156,7 +165,7 @@
                 const x = event.clientX + offset.x;
                 const y = event.clientY + offset.y;
                 selectedNode.setAttribute('transform', `translate(${x}, ${y})`);
-                updateArrowPath(); // Update arrow path position while dragging
+                updateArrowPath(edges); // Update arrow path position while dragging
             }
         }
 
@@ -167,19 +176,14 @@
         }
         
 
-        function connectNodes() {
-            if (nodes.length !== 2) {
-                alert('Please select exactly two nodes to connect.');
-                return;
-            }
+        function connectNodes(sourceNode, targetNode, edges) {
 
-            const [node1, node2] = nodes;
-            const rect1 = node1.querySelector('rect');
-            const rect2 = node2.querySelector('rect');
-            const x1 = parseFloat(node1.getAttribute('transform').split(',')[0].slice(10));
-            const y1 = parseFloat(node1.getAttribute('transform').split(',')[1].slice(0, -1));
-            const x2 = parseFloat(node2.getAttribute('transform').split(',')[0].slice(10));
-            const y2 = parseFloat(node2.getAttribute('transform').split(',')[1].slice(0, -1));
+            const rect1 = sourceNode.querySelector('rect');
+            const rect2 = targetNode.querySelector('rect');
+            const x1 = parseFloat(sourceNode.getAttribute('transform').split(',')[0].slice(10));
+            const y1 = parseFloat(sourceNode.getAttribute('transform').split(',')[1].slice(0, -1));
+            const x2 = parseFloat(targetNode.getAttribute('transform').split(',')[0].slice(10));
+            const y2 = parseFloat(targetNode.getAttribute('transform').split(',')[1].slice(0, -1));
             const rectWidth = parseFloat(rect1.getAttribute('width'));
             const rectHeight = parseFloat(rect1.getAttribute('height'));
 
@@ -204,12 +208,10 @@
 
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             path.setAttribute('class', 'arrow');
+            path.dataset.sourceId = sourceNode.dataset.nodeId;
+            path.dataset.targetId = targetNode.dataset.nodeId;
 
             // Create an L-shaped path
-            console.log("x1", x1Center)
-            console.log("y1", y1Center)
-            console.log("x2", x2Center)
-            console.log("y2", y2Center)
 
             const d = `M ${x1Center} ${y1Center} L ${x1Center} ${y2Center} L ${x2Center} ${y2Center}`;
             path.setAttribute('d', d);
@@ -217,25 +219,36 @@
             // Add arrowhead marker
             path.setAttribute('marker-end', 'url(#arrow)');
 
-            path.addEventListener('click', function (event) {
-                svg.removeChild(path);
-                const index1 = nodes.indexOf(node1);
-                const index2 = nodes.indexOf(node2);
-                nodes.splice(index1, 1);
-                nodes.splice(index2 - 1, 1);
-            });
-
+            // path.addEventListener('click', function (event) {
+            //     svg.removeChild(path);
+            //     const index1 = nodes.indexOf(sourceNode);
+            //     const index2 = nodes.indexOf(targetNode);
+            //     nodes.splice(index1, 1);
+            //     nodes.splice(index2 - 1, 1);
+            // });
             svg.appendChild(path);
             nodes.forEach(node => node.style.stroke = 'black'); // Apply stroke color using style property
             nodes = [];
+            edges.push({ source: sourceNode.dataset.nodeId, target: targetNode.dataset.nodeId, arrow: path });
+
+            return edges;
         }
 
         // Update arrow path based on node positions
-        function updateArrowPath() {
+        function updateArrowPath(edges) {
+            const canvas = document.getElementById('flowchart');
+
             const arrowPath = document?.querySelector('.arrow');
             if (!arrowPath) return;
+            console.log("edges", edges)
+            edges.forEach(edge => {
 
-            const [node1, node2] = nodes;
+            const node1 = canvas.querySelector(`[data-node-id="${edge.source}"]`);
+            const node2 = canvas.querySelector(`[data-node-id="${edge.target}"]`);
+            console.log("node1", node1)
+            console.log("node2", node2)
+            // const [node1, node2] = nodes;
+            if (node1 && node2) {
             const rect1 = node1.querySelector('rect');
             const rect2 = node2.querySelector('rect');
 
@@ -270,7 +283,9 @@
 
 
             const d = `M ${x1Center} ${y1Center} L ${x1Center} ${y2Center} L ${x2Center} ${y2Center}`;
-            arrowPath.setAttribute('d', d);
+            edge.arrow.setAttribute('d', d);
+                }
+            })
         }
 
         function getMousePosition(event) {
