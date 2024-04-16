@@ -189,6 +189,7 @@
 
             let y1Center = ''
             let x2Center = ''
+            let y2Center = ''
             const x1Center = x1 + rectWidth / 2;
             if (y1 < y2) {
                 y1Center = y1 + rectHeight;
@@ -204,7 +205,26 @@
                 x2Center = x2 + rectWidth;
             }
 
-            const y2Center = y2 + rectHeight / 2;
+            y2Center = y2 + rectHeight / 2;
+
+            // const isAdjacent = rect1.getBoundingClientRect().top > rect2.getBoundingClientRect().top ? "": ""
+            let isAdjacent = 0
+            if(rect1.getBoundingClientRect().left > rect2.getBoundingClientRect().left){
+                isAdjacent = rect1.getBoundingClientRect().left - rect2.getBoundingClientRect().left
+            }
+            else{
+                isAdjacent = rect2.getBoundingClientRect().left - rect1.getBoundingClientRect().left
+            }
+            console.log(isAdjacent,"adjacent top")
+            if(isAdjacent < 50){
+                if (y1 < y2) {
+                    y2Center = y2 ;
+                }
+                else{
+                    y2Center = y2 + rectHeight
+                }
+                x2Center = x2 + rectWidth/2;
+            }
 
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             path.setAttribute('class', 'arrow');
@@ -212,8 +232,13 @@
             path.dataset.targetId = targetNode.dataset.nodeId;
 
             // Create an L-shaped path
-
-            const d = `M ${x1Center} ${y1Center} L ${x1Center} ${y2Center} L ${x2Center} ${y2Center}`;
+            let d = 0;
+            if (isAdjacent < 50) {
+                d = `M ${x1Center} ${y1Center} L ${x2Center + 3} ${y2Center}`;
+            } else {
+                d = `M ${x1Center} ${y1Center} L ${x1Center} ${y2Center} L ${x2Center} ${y2Center}`;
+            }
+                    // const d = `M ${x1Center} ${y1Center} L ${x1Center} ${y2Center} L ${x2Center} ${y2Center}`;
             path.setAttribute('d', d);
 
             // Add arrowhead marker
@@ -240,14 +265,10 @@
 
             const arrowPath = document?.querySelector('.arrow');
             if (!arrowPath) return;
-            console.log("edges", edges)
             edges.forEach(edge => {
 
             const node1 = canvas.querySelector(`[data-node-id="${edge.source}"]`);
             const node2 = canvas.querySelector(`[data-node-id="${edge.target}"]`);
-            console.log("node1", node1)
-            console.log("node2", node2)
-            // const [node1, node2] = nodes;
             if (node1 && node2) {
             const rect1 = node1.querySelector('rect');
             const rect2 = node2.querySelector('rect');
@@ -280,9 +301,29 @@
                 x2Center = x2 + rectWidth;
             }
 
+            let isAdjacent = 0
+            if(rect1.getBoundingClientRect().left > rect2.getBoundingClientRect().left){
+                isAdjacent = rect1.getBoundingClientRect().left - rect2.getBoundingClientRect().left
+            }
+            else{
+                isAdjacent = rect2.getBoundingClientRect().left - rect1.getBoundingClientRect().left
+            }
 
+            let d = 0;
+            if(isAdjacent < 50){
+                if (y1 < y2) {
+                    y2Center = y2 ;
+                }
+                else{
+                    y2Center = y2 + rectHeight
+                }
+                x2Center = x2 + rectWidth/2;
+                d = `M ${x1Center} ${y1Center} L ${x2Center + 3} ${y2Center}`;
+            }
+            else {
+                d = `M ${x1Center} ${y1Center} L ${x1Center} ${y2Center} L ${x2Center} ${y2Center}`;
+            }
 
-            const d = `M ${x1Center} ${y1Center} L ${x1Center} ${y2Center} L ${x2Center} ${y2Center}`;
             edge.arrow.setAttribute('d', d);
                 }
             })
