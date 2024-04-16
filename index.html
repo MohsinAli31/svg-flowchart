@@ -51,7 +51,7 @@
         const svg = document.getElementById('flowchart');
         let nodes = [];
         let edges = [];
-        
+
         $('#connectNodesBtn').unbind().on('click', function () {
             const [sourceNode, targetNode] = nodes;
             if (nodes.length !== 2) {
@@ -74,36 +74,36 @@
 
 
 
-        let draggedItem = null;
-        let canvas = document.querySelector("#flowchart")
-        canvas.addEventListener('dragover', dragOverCanvas);
-        canvas.addEventListener('drop', dropOnCanvas);
+            let draggedItem = null;
+            let canvas = document.querySelector("#flowchart")
+            canvas.addEventListener('dragover', dragOverCanvas);
+            canvas.addEventListener('drop', dropOnCanvas);
 
-        // Function to handle drag start event
-        function dragStart(event) {
-            draggedItem = event.target;
-            event.dataTransfer.setData('text/plain', '');
-            event.target.classList.add('is-dragging');
-        }
+            // Function to handle drag start event
+            function dragStart(event) {
+                draggedItem = event.target;
+                event.dataTransfer.setData('text/plain', '');
+                event.target.classList.add('is-dragging');
+            }
 
-        // Function to handle drag end event
-        function dragEnd(event) {
-            draggedItem.classList.remove('is-dragging');
-            draggedItem = null;
-        }
+            // Function to handle drag end event
+            function dragEnd(event) {
+                draggedItem.classList.remove('is-dragging');
+                draggedItem = null;
+            }
 
-        function dragOverCanvas(event) {
-            event.preventDefault();
-        }
+            function dragOverCanvas(event) {
+                event.preventDefault();
+            }
 
-        // Function to handle drop event on the canvas
-        function dropOnCanvas(event) {
-            event.preventDefault();
-            createNode(draggedItem.getAttribute('data-node-title'));
-        }
+            // Function to handle drop event on the canvas
+            function dropOnCanvas(event) {
+                event.preventDefault();
+                createNode(draggedItem.getAttribute('data-node-title'));
+            }
 
-    });
-    function generateKey() {
+        });
+        function generateKey() {
             const arr = new Uint8Array((8 / 2));
             window.crypto.getRandomValues(arr);
             return `${Array.from(arr, dec => dec.toString(16).padStart(2, '0')).join('')}`;
@@ -174,7 +174,7 @@
             window.removeEventListener('mousemove', dragNode);
             window.removeEventListener('mouseup', endDrag);
         }
-        
+
 
         function connectNodes(sourceNode, targetNode, edges) {
 
@@ -190,7 +190,8 @@
             let y1Center = ''
             let x2Center = ''
             let y2Center = ''
-            const x1Center = x1 + rectWidth / 2;
+            let x1Center = ''
+            x1Center = x1 + rectWidth / 2;
             if (y1 < y2) {
                 y1Center = y1 + rectHeight;
             }
@@ -209,21 +210,30 @@
 
             // const isAdjacent = rect1.getBoundingClientRect().top > rect2.getBoundingClientRect().top ? "": ""
             let isAdjacent = 0
-            if(rect1.getBoundingClientRect().left > rect2.getBoundingClientRect().left){
+            let isAdjacentHorizontal = 0
+
+            if (rect1.getBoundingClientRect().left > rect2.getBoundingClientRect().left) {
                 isAdjacent = rect1.getBoundingClientRect().left - rect2.getBoundingClientRect().left
             }
-            else{
+            else {
                 isAdjacent = rect2.getBoundingClientRect().left - rect1.getBoundingClientRect().left
             }
-            console.log(isAdjacent,"adjacent top")
-            if(isAdjacent < 50){
+
+            if (rect1.getBoundingClientRect().top > rect2.getBoundingClientRect().top) {
+                isAdjacentHorizontal = rect1.getBoundingClientRect().top - rect2.getBoundingClientRect().top + 4
+            }
+            else {
+                isAdjacentHorizontal = rect2.getBoundingClientRect().top - rect1.getBoundingClientRect().top + 4
+            }
+
+            if (isAdjacent < 50) {
                 if (y1 < y2) {
-                    y2Center = y2 ;
+                    y2Center = y2;
                 }
-                else{
+                else {
                     y2Center = y2 + rectHeight
                 }
-                x2Center = x2 + rectWidth/2;
+                x2Center = x2 + rectWidth / 2;
             }
 
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -235,10 +245,22 @@
             let d = 0;
             if (isAdjacent < 50) {
                 d = `M ${x1Center} ${y1Center} L ${x2Center + 3} ${y2Center}`;
-            } else {
+            }
+            else if (isAdjacentHorizontal < 29) {
+                if (rect1.getBoundingClientRect().left > rect2.getBoundingClientRect().left) {
+                    x1Center = x1;
+                    y1Center = y1 + rectHeight / 2;
+                }
+                else {
+                    x1Center = x1 + rectWidth;
+                    y1Center = y1 + rectHeight / 2;
+                }
+                d = `M ${x1Center} ${y1Center} L ${x2Center} ${y2Center}`;
+            }
+            else {
                 d = `M ${x1Center} ${y1Center} L ${x1Center} ${y2Center} L ${x2Center} ${y2Center}`;
             }
-                    // const d = `M ${x1Center} ${y1Center} L ${x1Center} ${y2Center} L ${x2Center} ${y2Center}`;
+            // const d = `M ${x1Center} ${y1Center} L ${x1Center} ${y2Center} L ${x2Center} ${y2Center}`;
             path.setAttribute('d', d);
 
             // Add arrowhead marker
@@ -267,64 +289,83 @@
             if (!arrowPath) return;
             edges.forEach(edge => {
 
-            const node1 = canvas.querySelector(`[data-node-id="${edge.source}"]`);
-            const node2 = canvas.querySelector(`[data-node-id="${edge.target}"]`);
-            if (node1 && node2) {
-            const rect1 = node1.querySelector('rect');
-            const rect2 = node2.querySelector('rect');
+                const node1 = canvas.querySelector(`[data-node-id="${edge.source}"]`);
+                const node2 = canvas.querySelector(`[data-node-id="${edge.target}"]`);
+                if (node1 && node2) {
+                    const rect1 = node1.querySelector('rect');
+                    const rect2 = node2.querySelector('rect');
 
-            // Check if rect1 and rect2 are found
-            if (!rect1 || !rect2) return;
+                    // Check if rect1 and rect2 are found
+                    if (!rect1 || !rect2) return;
 
-            const x1 = parseFloat(node1.getAttribute('transform').split(',')[0].slice(10));
-            const y1 = parseFloat(node1.getAttribute('transform').split(',')[1].slice(0, -1));
-            const x2 = parseFloat(node2.getAttribute('transform').split(',')[0].slice(10));
-            const y2 = parseFloat(node2.getAttribute('transform').split(',')[1].slice(0, -1));
-            const rectWidth = parseFloat(rect1.getAttribute('width'));
-            const rectHeight = parseFloat(rect1.getAttribute('height'));
+                    const x1 = parseFloat(node1.getAttribute('transform').split(',')[0].slice(10));
+                    const y1 = parseFloat(node1.getAttribute('transform').split(',')[1].slice(0, -1));
+                    const x2 = parseFloat(node2.getAttribute('transform').split(',')[0].slice(10));
+                    const y2 = parseFloat(node2.getAttribute('transform').split(',')[1].slice(0, -1));
+                    const rectWidth = parseFloat(rect1.getAttribute('width'));
+                    const rectHeight = parseFloat(rect1.getAttribute('height'));
 
-            let x1Center = x1 + rectWidth / 2;
-            let y1Center = y1 + rectHeight / 2;
-            let x2Center = x2 + rectWidth / 2;
-            let y2Center = y2 + rectHeight / 2;
-            if (y1 < y2) {
-                y1Center = y1 + rectHeight;
-            }
-            else {
-                y1Center = y1;
-            }
+                    let x1Center = x1 + rectWidth / 2;
+                    let y1Center = y1 + rectHeight / 2;
+                    let x2Center = x2 + rectWidth / 2;
+                    let y2Center = y2 + rectHeight / 2;
+                    if (y1 < y2) {
+                        y1Center = y1 + rectHeight;
+                    }
+                    else {
+                        y1Center = y1;
+                    }
 
-            if (x1 < x2) {
-                x2Center = x2;
-            }
-            else {
-                x2Center = x2 + rectWidth;
-            }
+                    if (x1 < x2) {
+                        x2Center = x2;
+                    }
+                    else {
+                        x2Center = x2 + rectWidth;
+                    }
 
-            let isAdjacent = 0
-            if(rect1.getBoundingClientRect().left > rect2.getBoundingClientRect().left){
-                isAdjacent = rect1.getBoundingClientRect().left - rect2.getBoundingClientRect().left
-            }
-            else{
-                isAdjacent = rect2.getBoundingClientRect().left - rect1.getBoundingClientRect().left
-            }
+                    let isAdjacent = 0
+                    let isAdjacentHorizontal = 0
+                    if (rect1.getBoundingClientRect().left > rect2.getBoundingClientRect().left) {
+                        isAdjacent = rect1.getBoundingClientRect().left - rect2.getBoundingClientRect().left
+                    }
+                    else {
+                        isAdjacent = rect2.getBoundingClientRect().left - rect1.getBoundingClientRect().left
+                    }
+                    if (rect1.getBoundingClientRect().top > rect2.getBoundingClientRect().top) {
+                        isAdjacentHorizontal = rect1.getBoundingClientRect().top - rect2.getBoundingClientRect().top + 4
+                    }
+                    else {
+                        isAdjacentHorizontal = rect2.getBoundingClientRect().top - rect1.getBoundingClientRect().top + 4
+                    }
 
-            let d = 0;
-            if(isAdjacent < 50){
-                if (y1 < y2) {
-                    y2Center = y2 ;
-                }
-                else{
-                    y2Center = y2 + rectHeight
-                }
-                x2Center = x2 + rectWidth/2;
-                d = `M ${x1Center} ${y1Center} L ${x2Center + 3} ${y2Center}`;
-            }
-            else {
-                d = `M ${x1Center} ${y1Center} L ${x1Center} ${y2Center} L ${x2Center} ${y2Center}`;
-            }
-
-            edge.arrow.setAttribute('d', d);
+                    let d = 0;
+                    if (isAdjacent < 50) {
+                        if (y1 < y2) {
+                            y2Center = y2;
+                        }
+                        else {
+                            y2Center = y2 + rectHeight
+                        }
+                        x2Center = x2 + rectWidth / 2;
+                        d = `M ${x1Center} ${y1Center} L ${x2Center + 3} ${y2Center}`;
+                        isAdjacent = 0;
+                    }
+                    else if (isAdjacentHorizontal < 29) {
+                        if (rect1.getBoundingClientRect().left > rect2.getBoundingClientRect().left) {
+                            x1Center = x1;
+                            y1Center = y1 + rectHeight / 2;
+                        }
+                        else {
+                            x1Center = x1 + rectWidth;
+                            y1Center = y1 + rectHeight / 2;
+                        }
+                        d = `M ${x1Center} ${y1Center} L ${x2Center} ${y2Center}`;
+                    }
+                    else {
+                        d = `M ${x1Center} ${y1Center} L ${x1Center} ${y2Center} L ${x2Center} ${y2Center}`;
+                    }
+                    isAdjacent = 0;
+                    edge.arrow.setAttribute('d', d);
                 }
             })
         }
